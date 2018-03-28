@@ -1,0 +1,92 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Cloudformation template to create mysql database and redis cache.
+Parameters:
+  SecurityStack:
+    Description: Name of an active CloudFormation stack that contains all SG resources
+    Type: String
+    Default: securities
+  SubnetStack:
+    Description: Name of an active CloudFormation stack that contains all SG resources
+    Type: String
+    Default: subnets
+  DBInstanceIdentifier:
+    Type: String
+    Description: The database identifier
+  DBName:
+    Type: String
+    Description: The database name
+  MasterUsername: 
+    NoEcho: 'true'
+    Type: String
+    Description: The database admin account
+    AllowedPattern: '[a-zA-Z0-9]*'
+  MasterUserPassword:
+    NoEcho: 'true'
+    Description: The database admin account password
+    Type: String
+    MinLength: '8'
+    MaxLength: '41'
+    AllowedPattern: '[a-zA-Z0-9]*'
+  AllocatedStorage:
+    Type: Number
+    Description: Size of mysql rds (in GB)
+  DBInstanceClass:
+    Type: String
+    Description: Instance type of mysql
+    Default: db.t2.small
+  CacheNodeType:
+    Type: String
+    Description: Cache type
+    Default: cache.t2.small
+  CacheNodeNumber:
+    Type: Number
+    Description: Cache node number
+    Default: 1
+Resources:
+  DBParameterGroup:
+    Type: AWS::RDS::DBParameterGroup
+    Properties:
+      Description: Customized mysql database parameter group
+      Family: mysql5.7
+  MysqlInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AllocatedStorage: !Ref AllocatedStorage
+      DBInstanceClass: !Ref DBInstanceClass
+      DBInstanceIdentifier: !Ref DBInstanceIdentifier
+      DBName: !Ref DBName
+      DBParameterGroupName: !Ref DBParameterGroup
+      DBSubnetGroupName: 
+        Fn::ImportValue: !Sub "${SubnetStack}-DBSubnetGroupId"
+      Engine: mysql
+      EngineVersion: 5.7.19
+      MasterUsername: !Ref MasterUsername
+      MasterUserPassword: !Ref MasterUserPassword
+      MultiAZ: True
+      Port: 3306
+      PubliclyAccessible: False
+      StorageType: gp2
+      VPCSecurityGroups:
+        - Fn::ImportValue: !Sub "${SecurityStack}-RdsSG"
+      StorageEncrypted: True
+  ElastiCacheParameterGroup:
+    Type: AWS::ElastiCache::ParameterGroup
+    Properties:
+      CacheParameterGroupFamily: redis2.8
+      Description: Customized ElastiCache parameter group
+  RedisCache:
+    Type: AWS::ElastiCache::CacheCluster
+    Properties: 
+      CacheNodeType: !Ref CacheNodeType
+      CacheParameterGroupName: !Ref ElastiCacheParameterGroup
+      CacheSubnetGroupName: 
+        Fn::ImportValue: !Sub "${SubnetStack}-ElastiCacheSubnetGroupId"
+      Engine: redis
+      EngineVersion: 2.8.24
+      NumCacheNodes: 1
+      Port: 6379
+      VpcSecurityGroupIds:
+        - Fn::ImportValue: !Sub "${SecurityStack}-ElastiCacheSG"
+
+

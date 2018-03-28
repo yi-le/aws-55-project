@@ -1,0 +1,105 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Cloudformation template to create autoscale group, ALB and jumpbox
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: Select a VPC with Subnets covering 2 Availability zone at least.
+    MinLength: 1
+  PublicSubnet:
+    Type: AWS::EC2::Subnet::Id
+    Description: A public subnet to launch jumpbox
+  PrivateSubnets:
+    Description: A list that contains private subnets.
+    Type: List<AWS::EC2::Subnet::Id>
+  PublicSubnets:
+    Description: A list that contains public subnets.
+    Type: List<AWS::EC2::Subnet::Id>
+  SecurityStack:
+    Description: Name of an active CloudFormation stack that contains all SG resources
+    Type: String
+    Default: securities
+  RoleStack:
+    Description: Name of an active CloudFormation stack that contains all Role resources
+    Type: String
+    Default: roles
+Resources:
+  JumpBox:
+    Type: AWS::EC2::Instance
+    Properties: 
+      ImageId: ami-863090e8
+      InstanceType: t2.micro
+      KeyName: jumpbox
+      SubnetId: !Ref PublicSubnet
+      SecurityGroupIds: 
+        - Fn::ImportValue: !Sub "${SecurityStack}-JumpBoxSG"
+  LaunchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      ImageId: ami-863090e8
+      InstanceType: t2.micro
+      IamInstanceProfile: Fn::ImportValue: !Sub "${RoleStack}-InstanceProfile"
+      KeyName: server
+      SecurityGroups: 
+        - Fn::ImportValue: !Sub "${SecurityStack}-BaseSG"
+        - Fn::ImportValue: !Sub "${SecurityStack}-ALBPortSG"
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      DesiredCapacity: 2
+      MinSize: 1
+      MaxSize: 3
+      LaunchConfigurationName: !Ref LaunchConfiguration
+      VPCZoneIdentifier: !Ref PrivateSubnets
+      TargetGroupARNs: 
+        - !Ref ALBTargetGroup
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      SecurityGroups:
+        - Fn::ImportValue: !Sub "${SecurityStack}-ALBSG"
+      Subnets: !Ref PublicSubnets
+      Type: application
+  ALBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Protocol: HTTP
+      Port: 80
+      HealthCheckPath: /
+      VpcId: !Ref VpcId
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: 
+            forward
+          TargetGroupArn: 
+            !Ref ALBTargetGroup
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+  ScalingPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref AutoScalingGroup
+      PolicyType: TargetTrackingScaling
+      TargetTrackingConfiguration:
+        CustomizedMetricSpecification:
+          MetricName: RequestCount
+          Namespace: AWS/ApplicationELB
+          Statistic: Maximum
+        TargetValue: 5000
+Outputs:
+  Website:
+    Value: !Join 
+      - ''
+      - - 'http://'
+        - !GetAtt 
+          - ApplicationLoadBalancer
+          - DNSName
+  AutoScalingGroup:
+    Value: !Ref AutoScalingGroup
+    Description: Resource name of AutoScalingGroup
+    Export: 
+      Name: !Sub "${AWS::StackName}-AutoScalingGroup"

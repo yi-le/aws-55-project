@@ -1,0 +1,146 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Cloudformation template to create private and public subnets
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: Select a VPC.
+    MinLength: 1
+  GateWayId:
+    Type: String
+    Description: The internet gateway in vpc
+Resources:
+  PublicSubnet2a:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: ap-northeast-2a
+      CidrBlock: 172.31.64.0/20
+      MapPublicIpOnLaunch: True
+      Tags:
+        -
+          Key: Name
+          Value: 2a-public
+      VpcId: !Ref VpcId
+  PublicSubnet2c:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: ap-northeast-2c
+      CidrBlock: 172.31.80.0/20
+      MapPublicIpOnLaunch: True
+      Tags:
+        -
+          Key: Name
+          Value: 2c-public
+      VpcId: !Ref VpcId
+  PrivateSubnet2a:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: ap-northeast-2a
+      CidrBlock: 172.31.32.0/20
+      Tags:
+        -
+          Key: Name
+          Value: 2a-private
+      VpcId: !Ref VpcId
+  PrivateSubnet2c:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: ap-northeast-2c
+      CidrBlock: 172.31.48.0/20
+      Tags:
+        -
+          Key: Name
+          Value: 2c-private
+      VpcId: !Ref VpcId
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VpcId
+      Tags:
+        -
+          Key: Name
+          Value: PublicNets
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VpcId
+      Tags:
+        -
+          Key: Name
+          Value: PrivateNets
+  ElasticIPs:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  NatGateWay:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId:
+        Fn::GetAtt:
+          - ElasticIPs
+          - AllocationId
+      SubnetId: !Ref PublicSubnet2a
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref GateWayId
+      RouteTableId: !Ref PublicRouteTable
+  PrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateWay
+      RouteTableId: !Ref PrivateRouteTable
+  Public2aSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet2a
+  Public2cSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet2c
+  Private2aSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref PrivateSubnet2a
+  Private2cSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref PrivateSubnet2c
+  ElastiCacheSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      CacheSubnetGroupName: PrivateSubnets
+      Description: Private subnet goups
+      SubnetIds:
+        - !Ref PrivateSubnet2a
+        - !Ref PrivateSubnet2c
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Private subnet goups
+      DBSubnetGroupName: PrivateSubnets
+      SubnetIds:
+        - !Ref PrivateSubnet2a
+        - !Ref PrivateSubnet2c
+      Tags:
+        -
+          Key: Name
+          Value: PrivateSubnets
+Outputs:
+  ElastiCacheSubnetGroupId:
+    Value: !Ref ElastiCacheSubnetGroup
+    Description: name of ElastiCacheSubnetGroup
+    Export:
+      Name: !Sub "${AWS::StackName}-ElastiCacheSubnetGroupId"
+  DBSubnetGroupId:
+    Value: !Ref DBSubnetGroup
+    Description: name of DBSubnetGroup
+    Export:
+      Name: !Sub "${AWS::StackName}-DBSubnetGroupId"
+  

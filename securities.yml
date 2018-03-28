@@ -1,0 +1,144 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Cloudformation template to create all security groups
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: Select a VPC with Subnets covering 2 Availability zone at least.
+    MinLength: 1
+Resources:
+  JumpBoxSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Jumpbox security group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+      Tags:
+        -
+          Key: Name
+          Value: JumpBoxSG
+      VpcId: !Ref VpcId
+  BaseSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow jumpbox in from ssh
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          SourceSecurityGroupId: !Ref JumpBoxSG
+      Tags:
+        -
+          Key: Name
+          Value: BaseSG
+      VpcId: !Ref VpcId
+  ALBSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ALB security group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: 0.0.0.0/0
+      Tags:
+        -
+          Key: Name
+          Value: ALBSG
+      VpcId: !Ref VpcId 
+  ALBPortSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow ALB in from certain ports
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          SourceSecurityGroupId: !Ref ALBSG
+        - IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
+          SourceSecurityGroupId: !Ref ALBSG
+      Tags:
+        -
+          Key: Name
+          Value: ALBPortPortSG
+      VpcId: !Ref VpcId
+  RdsSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: RDS security group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '3306'
+          ToPort: '3306'
+          SourceSecurityGroupId: !Ref BaseSG
+        - IpProtocol: tcp
+          FromPort: '3306'
+          ToPort: '3306'
+          SourceSecurityGroupId: !Ref JumpBoxSG
+      Tags:
+        -
+          Key: Name
+          Value: RdsSG
+      VpcId: !Ref VpcId
+  ElastiCacheSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Elasticache security group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '6379'
+          ToPort: '6379'
+          SourceSecurityGroupId: !Ref BaseSG
+        - IpProtocol: tcp
+          FromPort: '6379'
+          ToPort: '6379'
+          SourceSecurityGroupId: !Ref JumpBoxSG
+      Tags:
+        -
+          Key: Name
+          Value: ElastiCacheSG
+      VpcId: !Ref VpcId
+Outputs:
+  JumpBoxSG:
+    Value: !Ref 'JumpBoxSG'
+    Description: Jumpbox security group
+    Export: 
+      Name: !Sub "${AWS::StackName}-JumpBoxSG"
+  ALBSG:
+    Value: !Ref 'ALBSG'
+    Description: ALB security group
+    Export: 
+      Name: !Sub "${AWS::StackName}-ALBSG"
+  BaseSG:
+    Value: !Ref 'BaseSG'
+    Description: Allow jumpbox in from SSH 22
+    Export: 
+      Name: !Sub "${AWS::StackName}-BaseSG"
+  ALBPortSG:
+    Value: !Ref 'ALBPortSG'
+    Description: Allow ALB in from certain Ports
+    Export: 
+      Name: !Sub "${AWS::StackName}-ALBPortSG"
+  RdsSG:
+    Value: !Ref 'RdsSG'
+    Description: Rds security group
+    Export: 
+      Name: !Sub "${AWS::StackName}-RdsSG"
+  ElastiCacheSG:
+    Value: !Ref 'ElastiCacheSG'
+    Description: Elasticache security group
+    Export: 
+      Name: !Sub "${AWS::StackName}-ElastiCacheSG"
+  StackName:
+    Value: !Ref AWS::StackName
+
+
