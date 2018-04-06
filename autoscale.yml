@@ -1,3 +1,5 @@
+
+
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Cloudformation template to create autoscale group, ALB and jumpbox
@@ -27,7 +29,7 @@ Resources:
   JumpBox:
     Type: AWS::EC2::Instance
     Properties: 
-      ImageId: ami-863090e8
+      ImageId: ami-3e04a450
       InstanceType: t2.micro
       KeyName: jumpbox
       SubnetId: !Ref PublicSubnet
@@ -36,9 +38,10 @@ Resources:
   LaunchConfiguration:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
-      ImageId: ami-863090e8
+      ImageId: ami-3e04a450
       InstanceType: t2.micro
-      IamInstanceProfile: Fn::ImportValue: !Sub "${RoleStack}-InstanceProfile"
+      IamInstanceProfile: 
+        Fn::ImportValue: !Sub "${RoleStack}-InstanceProfile"
       KeyName: server
       SecurityGroups: 
         - Fn::ImportValue: !Sub "${SecurityStack}-BaseSG"
@@ -103,3 +106,5 @@ Outputs:
     Description: Resource name of AutoScalingGroup
     Export: 
       Name: !Sub "${AWS::StackName}-AutoScalingGroup"
+
+

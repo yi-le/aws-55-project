@@ -14,7 +14,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone: ap-northeast-2a
-      CidrBlock: 172.31.64.0/20
+      CidrBlock: 10.150.20.0/20
       MapPublicIpOnLaunch: True
       Tags:
         -
@@ -25,7 +25,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone: ap-northeast-2c
-      CidrBlock: 172.31.80.0/20
+      CidrBlock: 10.150.40.0/20
       MapPublicIpOnLaunch: True
       Tags:
         -
@@ -36,7 +36,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone: ap-northeast-2a
-      CidrBlock: 172.31.32.0/20
+      CidrBlock: 10.150.60.0/20
       Tags:
         -
           Key: Name
@@ -46,7 +46,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone: ap-northeast-2c
-      CidrBlock: 172.31.48.0/20
+      CidrBlock: 10.150.80.0/20
       Tags:
         -
           Key: Name

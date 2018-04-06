@@ -1,3 +1,5 @@
+
+
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Cloudformation template to create mysql database and redis cache.
@@ -88,5 +90,6 @@ Resources:
       Port: 6379
       VpcSecurityGroupIds:
         - Fn::ImportValue: !Sub "${SecurityStack}-ElastiCacheSG"
+
 
 
