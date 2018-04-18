@@ -27,7 +27,7 @@ Resources:
   JumpBox:
     Type: AWS::EC2::Instance
     Properties: 
-      ImageId: ami-07eb707f
+      ImageId: ami-3e04a450
       InstanceType: t2.micro
       KeyName: jumpbox
       SubnetId: !Ref PublicSubnet
@@ -104,3 +104,5 @@ Outputs:
     Description: Resource name of AutoScalingGroup
     Export: 
       Name: !Sub "${AWS::StackName}-AutoScalingGroup"
+
+
