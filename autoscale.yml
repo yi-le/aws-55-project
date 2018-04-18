@@ -27,7 +27,7 @@ Resources:
   JumpBox:
     Type: AWS::EC2::Instance
     Properties: 
-      ImageId: ami-863090e8
+      ImageId: ami-07eb707f
       InstanceType: t2.micro
       KeyName: jumpbox
       SubnetId: !Ref PublicSubnet
@@ -36,9 +36,10 @@ Resources:
   LaunchConfiguration:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
-      ImageId: ami-863090e8
-      InstanceType: t2.micro
-      IamInstanceProfile: Fn::ImportValue: !Sub "${RoleStack}-InstanceProfile"
+      ImageId: ami-4e79ed36
+      InstanceType: t2.large
+      IamInstanceProfile: 
+        Fn::ImportValue: !Sub "${RoleStack}-InstanceProfile"
       KeyName: server
       SecurityGroups: 
         - Fn::ImportValue: !Sub "${SecurityStack}-BaseSG"
